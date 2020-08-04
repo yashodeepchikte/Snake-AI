@@ -145,7 +145,7 @@ class Game:
     
     
     def init(self):
-        self._display_surf = pygame.display.set_mode((self.window_width, self.window_height + 150), pygame.HWSURFACE)
+        self._display_surf = pygame.display.set_mode((self.window_width+200, self.window_height + 150), pygame.HWSURFACE)
         self.board_rect = pygame.Rect(self.border_width, self.border_width, self.window_width - 2 * self.border_width, self.window_height - 2 * self.border_width)
         
         pygame.display.set_caption('AI SNAKE')
@@ -169,23 +169,19 @@ class Game:
         pygame.draw.rect(self._display_surf, (255, 255, 255), self.board_rect) # board where snake moves
         
         
-    def draw_ui(self):
-        myfont = pygame.font.SysFont('Segoe UI', 32)
-        myfont_bold = pygame.font.SysFont('Segoe UI', 32, True)
-        text_game_count = myfont.render('GAME COUNT: ', True, (255, 255, 255))
-        text_game_count_number = myfont.render(str(self.game_count), True, (255, 255, 255))
-        text_score = myfont.render('SCORE: ', True, (255, 255, 255))
-        text_score_number = myfont.render(str(self.player.get_score()), True, (255, 255, 255))
-        text_highest = myfont.render('HIGHEST SCORE: ', True, (255, 255, 255))
-        text_highest_number = myfont_bold.render(str(self.highscore), True, (255, 255, 255))
-        self._display_surf.blit(text_game_count, (45, self.window_height + 50))
-        self._display_surf.blit(text_game_count_number, (220, self.window_height + 50))
         
-        self._display_surf.blit(text_score, (45, self.window_height + 100))
-        self._display_surf.blit(text_score_number, (150, self.window_height + 100))
-        self._display_surf.blit(text_highest, (220, self.window_height + 100))
-        self._display_surf.blit(text_highest_number, (430, self.window_height + 100))
-
+    def draw_ui(self):
+        myfont = pygame.font.SysFont('Segoe UI', 22)
+        myfont_bold = pygame.font.SysFont('Segoe UI', 32, True)
+        text_game_count = myfont.render('GAME COUNT: ' + str(self.game_count), True, (0, 255, 255))
+        
+        text_score = myfont.render('SCORE: '+ str(self.player.get_score()), True, (0, 255, 255))
+        text_highest = myfont.render('HIGHEST SCORE: '+str(self.highscore), True, (0, 255, 255))
+        
+        self._display_surf.blit(text_game_count, (self.window_width - self.border_width + 5,   50))
+        self._display_surf.blit(text_score, (self.window_width - self.border_width + 5,  100))
+        self._display_surf.blit(text_highest, (self.window_width - self.border_width + 5,  150))
+    
 
     def draw_snake(self):
         for p in self.player.positions:
