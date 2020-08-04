@@ -24,6 +24,7 @@ class Position:
         self.y = y
         
     def __eq__(self, other):
+        # check for equlaity for 2 positions
         return self.x == other.x and self.y == other.y
     
     def __hash__(self):
@@ -80,33 +81,45 @@ class Player:
         self.positions = [Position(100, 100)]
         self.last_move = Move.NONE
         self.image = pygame.image.load('img/body.png')
+        self.head  = pygame.image.load('img/head.png')
         self.step = self.get_first_block_rect().right - self.get_first_block_rect().left
         
         
     def make_bigger(self):
+        # increases the length of the snake
         self.positions.append(Position(0, 0))
         
     
     def get_first_block_rect(self):
+        # returns the position of the head
         return self.image.get_rect().move((self.positions[0].x, self.positions[0].y))
     
     def get_snake_length(self):
+        # returns the length of the snake
         return len(self.positions)
     
     def get_score(self):
+        # retruns the score
+        # depending on how we measure it
+        # as of now 1 fruit = 1 point
+        # in future we may want to add negative points
         return self.get_snake_length() - INITIAL_LENGTH
     
     def set_move(self, move):
+        # this function will set the self.last_move value
+        # We cannot move directly in the opposite of the current direction
         if move == Move.NONE:
             return
         if abs(int(self.last_move) - int(move)) != 2:
+            # this if will ensore that we dont move directly in the opposite direction
             self.last_move = move
         
     def update(self):
+        
         for i in range(len(self.positions) - 1, 0, -1):
             self.positions[i].x = self.positions[i-1].x
             self.positions[i].y = self.positions[i-1].y
-            
+        
         if self.last_move == Move.UP:
             self.positions[0].y -= self.step
         elif self.last_move == Move.DOWN:
@@ -114,7 +127,8 @@ class Player:
         elif self.last_move == Move.LEFT:
             self.positions[0].x -= self.step
         elif self.last_move == Move.RIGHT:
-            self.positions[0].x += self.step
+            self.positions[0].x += self.step          
+        
         
         
 class Game:
@@ -125,6 +139,7 @@ class Game:
     fruit = None
     
     def __init__(self, controller):
+        # we initialise pygame here all other imp initializations are in  the init() function
         pygame.init()
         self._running = True
         self._display_surf = None
@@ -135,6 +150,8 @@ class Game:
         self.fruit = Fruit()
         
     def _generate_init_player_state(self):
+        # Randomly generates a snalke and gives it a random direction for movement
+        # we will call this ins the init method
         self.player.positions[0].x = random.randint(self.board_rect.left, self.board_rect.right - 1)
         self.player.positions[0].y = random.randint(self.board_rect.top, self.board_rect.bottom - 1)
         
@@ -145,6 +162,8 @@ class Game:
     
     
     def init(self):
+        # this method will be called when we start to run the game 
+        # see the run method
         self._display_surf = pygame.display.set_mode((self.window_width+200, self.window_height + 150), pygame.HWSURFACE)
         self.board_rect = pygame.Rect(self.border_width, self.border_width, self.window_width - 2 * self.border_width, self.window_height - 2 * self.border_width)
         
@@ -153,9 +172,11 @@ class Game:
         self._generate_init_player_state()
         self.generate_fruit()
         self._running = True
+        self.moves_left = 200
         
     
     def is_player_inside_board(self):
+        # this basically takes care of the wall collision
         return self.board_rect.contains(self.player.get_first_block_rect())
     def on_event(self, events):
         for event in events:   
@@ -173,19 +194,25 @@ class Game:
     def draw_ui(self):
         myfont = pygame.font.SysFont('Segoe UI', 22)
         myfont_bold = pygame.font.SysFont('Segoe UI', 32, True)
-        text_game_count = myfont.render('GAME COUNT: ' + str(self.game_count), True, (0, 255, 255))
         
+        text_game_count = myfont.render('GAME COUNT: ' + str(self.game_count), True, (0, 255, 255))
         text_score = myfont.render('SCORE: '+ str(self.player.get_score()), True, (0, 255, 255))
         text_highest = myfont.render('HIGHEST SCORE: '+str(self.highscore), True, (0, 255, 255))
+        text_moves_left = myfont.render('MOVES LEFT: '+str(self.moves_left), True, (0, 255, 255))   
         
         self._display_surf.blit(text_game_count, (self.window_width - self.border_width + 5,   50))
         self._display_surf.blit(text_score, (self.window_width - self.border_width + 5,  100))
         self._display_surf.blit(text_highest, (self.window_width - self.border_width + 5,  150))
+        self._display_surf.blit(text_moves_left, (self.window_width - self.border_width + 5,  200))
     
 
     def draw_snake(self):
-        for p in self.player.positions:
-            self._display_surf.blit(self.player.image, (p.x, p.y))
+        # draws the snake based on the positions
+        for (i, p) in enumerate(self.player.positions):
+            if i == 0:
+                self._display_surf.blit(self.player.head, (p.x, p.y))
+            else:    
+                self._display_surf.blit(self.player.image, (p.x, p.y))
         
         
     def draw_fruit(self):
@@ -199,7 +226,8 @@ class Game:
         self.fruit.position.x -= self.fruit.position.x % 20
         self.fruit.position.y -= self.fruit.position.y % 20
         
-        # check if fruit is generated on snake body by mistake
+        # check if fruit is generated on snake body by chance
+        # if it is then generate fruit in another spot
         if self.fruit.position in self.player.positions:
             self.generate_fruit()
         
@@ -217,30 +245,40 @@ class Game:
         pygame.quit()
         
     def read_move(self):
+        last_move = self.player.last_move
         self.player.set_move(self.controller.get_move())
             
-        # if keys[K_ESCAPE]:
-        #     self._running = False
         
+        if last_move != self.player.last_move:
+            # This will restrict the maximum moves any player can make without eating a fruit
+            # ai or keyboard  if the snake eats a fruit the remaining moves will increase
+            self.moves_left -= 1
         
     def update_snake(self):
         self.player.update()
         
     
     def check_collisions(self):
+        # check collision with wall
         if not self.is_player_inside_board():
             self._running = False
             
+        # check collision with body
         if len(self.player.positions) != len(set(self.player.positions)):
             # there are duplicates -> snake is colliding with itself
             self._running = False
-        
+            
+        # Check collision with fruit
         if self.fruit.get_rect().contains(self.player.get_first_block_rect()):
             self.player.make_bigger()
+            self.moves_left += 500
             self.generate_fruit()
             if self.player.get_score() > self.highscore:
                 self.highscore = self.player.get_score()
         
+        # Check if we are running out of moves
+        if self.moves_left <= 0:
+            self._running = False    
         
     def run(self):
         self.init()
@@ -270,8 +308,8 @@ if __name__ == "__main__":
     controller = KeyboardController()
     if args.ai:
         controller = AIController()
-
+        
     game = Game(controller)
     while True:
         game.run()
-    game.cleanup
+    game.cleanup()
