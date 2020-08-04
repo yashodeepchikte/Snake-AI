@@ -138,7 +138,7 @@ class Game:
     player = None
     fruit = None
     
-    def __init__(self, controller):
+    def __init__(self, controller, speed):
         # we initialise pygame here all other imp initializations are in  the init() function
         pygame.init()
         self._running = True
@@ -148,6 +148,7 @@ class Game:
         self.game_count = 0
         self.controller = controller
         self.fruit = Fruit()
+        self.speed = speed
         
     def _generate_init_player_state(self):
         # Randomly generates a snalke and gives it a random direction for movement
@@ -164,7 +165,7 @@ class Game:
     def init(self):
         # this method will be called when we start to run the game 
         # see the run method
-        self._display_surf = pygame.display.set_mode((self.window_width+200, self.window_height + 150), pygame.HWSURFACE)
+        self._display_surf = pygame.display.set_mode((self.window_width+200, self.window_height), pygame.HWSURFACE)
         self.board_rect = pygame.Rect(self.border_width, self.border_width, self.window_width - 2 * self.border_width, self.window_height - 2 * self.border_width)
         
         pygame.display.set_caption('AI SNAKE')
@@ -199,11 +200,13 @@ class Game:
         text_score = myfont.render('SCORE: '+ str(self.player.get_score()), True, (0, 255, 255))
         text_highest = myfont.render('HIGHEST SCORE: '+str(self.highscore), True, (0, 255, 255))
         text_moves_left = myfont.render('MOVES LEFT: '+str(self.moves_left), True, (0, 255, 255))   
+        dealy_between_frames = myfont.render('DELAY: '+str(self.speed)+"ms", True, (0, 255, 255))   
         
-        self._display_surf.blit(text_game_count, (self.window_width - self.border_width + 5,   50))
-        self._display_surf.blit(text_score, (self.window_width - self.border_width + 5,  100))
-        self._display_surf.blit(text_highest, (self.window_width - self.border_width + 5,  150))
-        self._display_surf.blit(text_moves_left, (self.window_width - self.border_width + 5,  200))
+        self._display_surf.blit(text_game_count, (self.window_width - self.border_width + 5,   30))
+        self._display_surf.blit(text_score, (self.window_width - self.border_width + 5,  60))
+        self._display_surf.blit(text_highest, (self.window_width - self.border_width + 5,  90))
+        self._display_surf.blit(text_moves_left, (self.window_width - self.border_width + 5,  120))
+        self._display_surf.blit(dealy_between_frames, (self.window_width - self.border_width + 5,  150))
     
 
     def draw_snake(self):
@@ -294,7 +297,7 @@ class Game:
             self.on_event(events)
 
             self.controller.update_state(self.player)
-            pygame.time.wait(100)
+            pygame.time.wait(self.speed)
     
     
     
@@ -302,6 +305,7 @@ if __name__ == "__main__":
     
     parser = argparse.ArgumentParser()
     parser.add_argument('--ai', action='store_true', help="AI controlls snake")
+    parser.add_argument("--speed",type=int, default=100, help='Specifiy the delay between the frames in milli-seconds. 0 is the fastest. Default: 100 do note 0 ms is not attainable some delay is introduced becaiuse of the computations')
     args = parser.parse_args()
 
 
@@ -309,7 +313,8 @@ if __name__ == "__main__":
     if args.ai:
         controller = AIController()
         
-    game = Game(controller)
+    game = Game(controller, args.speed)
+    print("Args recieved = ", args)
     while True:
         game.run()
     game.cleanup()
