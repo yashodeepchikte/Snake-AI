@@ -41,38 +41,40 @@ class Fruit:
     
     
 class Controller:
-    def get_move(self):
+    player = None
+    def make_move(self):
         pass
-    
-    def update_state(self, player):
+    def update_state(self):
         pass
 
 class KeyboardController(Controller):
-    def get_move(self):
-        pygame.event.pump()
-        keys = pygame.key.get_pressed()
-        move = Move.NONE
+
+	player = None
+	def make_move(self):
+		pygame.event.pump()
+		keys = pygame.key.get_pressed()
+		move = Move.NONE
         
-        if keys[K_RIGHT]:
-            move = Move.RIGHT
-        elif keys[K_LEFT]:
-            move = Move.LEFT
-        elif keys[K_UP]:
-            move = Move.UP
-        elif keys[K_DOWN]:
-            move = Move.DOWN
-            
-        return move
-    
-    def update_state(self, player):
-        pass
+		if keys[K_RIGHT]:	
+			move = Move.RIGHT
+		elif keys[K_LEFT]:
+			move = Move.LEFT
+		elif keys[K_UP]:
+			move = Move.UP
+		elif keys[K_DOWN]:
+			move = Move.DOWN
+        
+		self.player.set_move(move)
+	
+	def update_state(self):
+		pass
     
 
 class AIController(Controller):
-    def get_move(self):
-        return Move(random.randint(1,4))
-    
-    def update_state(self, player):
+    player = None
+    def make_move(self):
+        self.player.set_move(Move(random.randint(1,4)))
+    def update_state(self):
         pass
     
 
@@ -134,7 +136,7 @@ class Player:
 class Game:
     window_width = 800
     window_height = 800
-    border_width = 40
+    
     player = None
     fruit = None
     
@@ -156,10 +158,10 @@ class Game:
         self.player.positions[0].x = random.randint(self.board_rect.left, self.board_rect.right - 1)
         self.player.positions[0].y = random.randint(self.board_rect.top, self.board_rect.bottom - 1)
         
-        self.player.positions[0].x -= self.player.positions[0].x % 20
-        self.player.positions[0].y -= self.player.positions[0].y % 20
+        self.player.positions[0].x -= self.player.positions[0].x % self.player.step
+        self.player.positions[0].y -= self.player.positions[0].y % self.player.step
         
-        self.player.set_move(Move(random.randint(1,4)))
+        self.player.set_move(Move(random.randint(1, 4)))
     
     
     def init(self):
@@ -174,6 +176,7 @@ class Game:
         self.generate_fruit()
         self._running = True
         self.moves_left = 200
+        self.controller.player = self.player
         
     
     def is_player_inside_board(self):
@@ -254,7 +257,8 @@ class Game:
         
     def read_move(self):
         last_move = self.player.last_move
-        self.player.set_move(self.controller.get_move())
+        # self.player.set_move(self.controller.get_move())
+        self.controller.make_move()
             
         
         if last_move != self.player.last_move:
@@ -301,7 +305,7 @@ class Game:
             events = pygame.event.get()
             self.on_event(events)
 
-            self.controller.update_state(self.player)
+            self.controller.update_state()
             pygame.time.wait(self.speed)
     
     
