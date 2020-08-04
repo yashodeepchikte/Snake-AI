@@ -179,6 +179,11 @@ class Game:
     def is_player_inside_board(self):
         # this basically takes care of the wall collision
         return self.board_rect.contains(self.player.get_first_block_rect())
+    
+    def get_score(self):
+        # this will get the current score form the players get_scoe function
+        return self.player.get_score()
+    
     def on_event(self, events):
         for event in events:   
             if event.type == pygame.QUIT:
@@ -197,7 +202,7 @@ class Game:
         myfont_bold = pygame.font.SysFont('Segoe UI', 32, True)
         
         text_game_count = myfont.render('GAME COUNT: ' + str(self.game_count), True, (0, 255, 255))
-        text_score = myfont.render('SCORE: '+ str(self.player.get_score()), True, (0, 255, 255))
+        text_score = myfont.render('SCORE: '+ str(self.get_score()), True, (0, 255, 255))
         text_highest = myfont.render('HIGHEST SCORE: '+str(self.highscore), True, (0, 255, 255))
         text_moves_left = myfont.render('MOVES LEFT: '+str(self.moves_left), True, (0, 255, 255))   
         dealy_between_frames = myfont.render('DELAY: '+str(self.speed)+"ms", True, (0, 255, 255))   
@@ -306,15 +311,23 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--ai', action='store_true', help="AI controlls snake")
     parser.add_argument("--speed",type=int, default=100, help='Specifiy the delay between the frames in milli-seconds. 0 is the fastest. Default: 100 do note 0 ms is not attainable some delay is introduced becaiuse of the computations')
+    parser.add_argument('--count', type=int, default=100, help='Max game count to be played. Default: 100')
+
     args = parser.parse_args()
 
 
     controller = KeyboardController()
     if args.ai:
         controller = AIController()
-        
+    
+    score_in_game = []
+    highscore_in_game = [] 
+    
     game = Game(controller, args.speed)
     print("Args recieved = ", args)
-    while True:
+    while game.game_count < args.count:
         game.run()
+        score_in_game.append(game.get_score())
+        highscore_in_game.append(game.highscore)
+        
     game.cleanup()
