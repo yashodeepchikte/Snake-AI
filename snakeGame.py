@@ -11,13 +11,18 @@ class Move(enum.Enum):
     UP = 1
     RIGHT = 2
     DOWN = 3
-    LEFT = 4
-    
-    NONE = 255
-    
+    LEFT = 4    
+    NONE = 255    
     def __int__(self):
         return self.value
-    
+
+class CellItemType(enum.Enum):
+    EMPTY = 0
+    BODY = 1
+    HEAD = 2
+    FRUIT = 4
+
+
 class Position:
     def __init__(self, x, y):
         self.x = x
@@ -42,6 +47,7 @@ class Fruit:
     
 class Controller:
     player = None
+    game = None
     def make_move(self):
         pass
     def update_state(self):
@@ -49,35 +55,65 @@ class Controller:
 
 class KeyboardController(Controller):
 
-	player = None
-	def make_move(self):
-		pygame.event.pump()
-		keys = pygame.key.get_pressed()
-		move = Move.NONE
-        
-		if keys[K_RIGHT]:	
-			move = Move.RIGHT
-		elif keys[K_LEFT]:
-			move = Move.LEFT
-		elif keys[K_UP]:
-			move = Move.UP
-		elif keys[K_DOWN]:
-			move = Move.DOWN
-        
-		self.player.set_move(move)
-	
-	def update_state(self):
-		pass
-    
-
-class AIController(Controller):
     player = None
+    game = None
+    
     def make_move(self):
-        self.player.set_move(Move(random.randint(1,4)))
+        pygame.event.pump()
+        keys = pygame.key.get_pressed()
+        move = Move.NONE
+        
+        if keys[K_RIGHT]:	
+            move = Move.RIGHT
+        elif keys[K_LEFT]:
+            move = Move.LEFT
+        elif keys[K_UP]:
+            move = Move.UP
+        elif keys[K_DOWN]:
+            move = Move.DOWN
+        
+        self.player.set_move(move)
+	
     def update_state(self):
         pass
     
 
+class AIController(Controller):
+    player = None
+    game = None
+    
+    def make_move(self):
+        self.player.set_move(Move(random.randint(1,4)))
+    def update_state(self):
+        if not game.is_end():
+            # this function is not written yet --------------------------------------------------------
+            board = self.board_state_to_list()
+        def coordinates_to_board_index(self, x, y):
+            # counverts coordinates to bord index
+            tmp_x = (x - self.game.board_rect.top) / self.player.step
+            tmp_y = (y - self.game.board_rect.left) / self.player.step
+            
+            width = (self.game.board_rect.right - self.game.board_rect.left) / self.player.step
+            return int(tmp_y * width + tmp_x)
+        
+        def board_state_to_list(self):
+            # first fill the board with empty 
+            # then add the fruit
+            # then add the snake
+            board = []
+            for row in range(self.game.board_rect.top, self.game.board_rect.bottom, self.player.step):
+                for col in range(self.game.board_rect.left, self.game.board_rect.right, self.player.step):
+                    board.append(CellItemType.EMPTY.value)
+
+            board[self.coordinates_to_board_index(self.game.fruit.position.x, self.game.fruit.position.y)] = CellItemType.FRUIT.value
+            
+            for pos in self.player.positions:
+                board[self.coordinates_to_board_index(pos.x, pos.y)] = CellItemType.BODY.value
+            
+            snake_head = self.player.positions[0]
+            board[self.coordinates_to_board_index(snake_head.x, snake_head.y)] = CellItemType.HEAD.value
+            
+            return board
 class Player:
     def __init__(self):
         self.positions = [Position(100, 100)]
@@ -89,7 +125,7 @@ class Player:
         
     def make_bigger(self):
         # increases the length of the snake
-        self.positions.append(Position(0, 0))
+        self.positions.append(Position(self.positions[-1].x, self.positions[-1].y))
         
     
     def get_first_block_rect(self):
@@ -167,16 +203,25 @@ class Game:
     def init(self):
         # this method will be called when we start to run the game 
         # see the run method
+        pygame.display.set_caption('AI SNAKE')
+        self.player = Player()
+        self.controller.player = self.player
+        self.controller.game = self
+        self.border_width = 3 * self.player.step
+        
+        self.window_width = 40 * self.player.step
+        self.window_height = 40 * self.player.step
+        
         self._display_surf = pygame.display.set_mode((self.window_width+200, self.window_height), pygame.HWSURFACE)
         self.board_rect = pygame.Rect(self.border_width, self.border_width, self.window_width - 2 * self.border_width, self.window_height - 2 * self.border_width)
         
-        pygame.display.set_caption('AI SNAKE')
-        self.player = Player()
+        
+        
         self._generate_init_player_state()
         self.generate_fruit()
         self._running = True
         self.moves_left = 200
-        self.controller.player = self.player
+        
         
     
     def is_player_inside_board(self):
@@ -187,6 +232,9 @@ class Game:
         # this will get the current score form the players get_scoe function
         return self.player.get_score()
     
+    def is_end(self):
+        return not self._running
+        
     def on_event(self, events):
         for event in events:   
             if event.type == pygame.QUIT:
@@ -210,11 +258,11 @@ class Game:
         text_moves_left = myfont.render('MOVES LEFT: '+str(self.moves_left), True, (0, 255, 255))   
         dealy_between_frames = myfont.render('DELAY: '+str(self.speed)+"ms", True, (0, 255, 255))   
         
-        self._display_surf.blit(text_game_count, (self.window_width - self.border_width + 5,   30))
-        self._display_surf.blit(text_score, (self.window_width - self.border_width + 5,  60))
-        self._display_surf.blit(text_highest, (self.window_width - self.border_width + 5,  90))
-        self._display_surf.blit(text_moves_left, (self.window_width - self.border_width + 5,  120))
-        self._display_surf.blit(dealy_between_frames, (self.window_width - self.border_width + 5,  150))
+        self._display_surf.blit(text_game_count, (self.window_width - self.border_width + 5,   self.border_width))
+        self._display_surf.blit(text_score, (self.window_width - self.border_width + 5,  2*self.border_width))
+        self._display_surf.blit(text_highest, (self.window_width - self.border_width + 5,  3*self.border_width))
+        self._display_surf.blit(text_moves_left, (self.window_width - self.border_width + 5,  4*self.border_width))
+        self._display_surf.blit(dealy_between_frames, (self.window_width - self.border_width + 5,  5*self.border_width))
     
 
     def draw_snake(self):
@@ -234,9 +282,8 @@ class Game:
         self.fruit.position.x = random.randint(self.board_rect.left, self.board_rect.right - 1)
         self.fruit.position.y = random.randint(self.board_rect.top, self.board_rect.bottom - 1)
         
-        self.fruit.position.x -= self.fruit.position.x % 20
-        self.fruit.position.y -= self.fruit.position.y % 20
-        
+        self.fruit.position.x -= self.fruit.position.x % self.player.step
+        self.fruit.position.y -= self.fruit.position.y % self.player.step
         # check if fruit is generated on snake body by chance
         # if it is then generate fruit in another spot
         if self.fruit.position in self.player.positions:
@@ -295,7 +342,7 @@ class Game:
     def run(self):
         self.init()
         self.game_count += 1
-        while self._running:
+        while not self.is_end():
             self.render()
             self.read_move()
             self.update_snake()
