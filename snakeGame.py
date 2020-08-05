@@ -3,12 +3,11 @@ import pygame
 import enum
 import random
 import argparse
-import sys
-
 from ai import *
 from controller import *
 
 INITIAL_LENGTH = 1
+WINDOW_TO_STEP_MULTIPLIER = 20
     
 class Position:
     def __init__(self, x, y):
@@ -20,6 +19,9 @@ class Position:
     
     def __hash__(self):
         return hash(str(self.x) + ',' + str(self.y))
+    
+    def distance(self, other):
+        return abs(other.x - self.x) + abs(other.y - self.y)
     
 
 class Fruit:
@@ -80,8 +82,6 @@ class Player:
         
         
 class Game:
-    window_width = 800
-    window_height = 800
     player = None
     fruit = None
     
@@ -109,17 +109,16 @@ class Game:
     def init(self):
         pygame.display.set_caption('AI SNAKE')
         self.player = Player()
-        self.controller.player = self.player
-        self.controller.game = self
-        self.border_width = 3 * self.player.step
-        self.window_width = 40 * self.player.step
-        self.window_height = 40 * self.player.step
+        self.border_width = 2 * self.player.step
+        self.window_width = WINDOW_TO_STEP_MULTIPLIER * self.player.step
+        self.window_height = WINDOW_TO_STEP_MULTIPLIER * self.player.step
         
         self._display_surf = pygame.display.set_mode((self.window_width, self.window_height + 150), pygame.HWSURFACE)
         self.board_rect = pygame.Rect(self.border_width, self.border_width, self.window_width - 2 * self.border_width, self.window_height - 2 * self.border_width)
         
         self._generate_init_player_state()
         self.generate_fruit()
+        self.controller.init(self.player, self)
         self.moves_left = 200
         self._running = True
         
@@ -132,13 +131,7 @@ class Game:
     
     def is_end(self):
         return not self._running
-    
-    def on_event(self, events):
-        for event in events:   
-            if event.type == pygame.QUIT:
-                self._running = False
-                pygame.quit()
-                sys.exit()
+        
     
     def draw_board(self):
         self._display_surf.fill((0, 0, 0))    # border
@@ -146,8 +139,8 @@ class Game:
         
         
     def draw_ui(self):
-        myfont = pygame.font.SysFont('Segoe UI', 32)
-        myfont_bold = pygame.font.SysFont('Segoe UI', 32, True)
+        myfont = pygame.font.SysFont('Segoe UI', 23)
+        myfont_bold = pygame.font.SysFont('Segoe UI', 23, True)
         
         text_game_count = myfont.render('GAME COUNT: ', True, (255, 255, 255))
         text_game_count_number = myfont.render(str(self.game_count), True, (255, 255, 255))  
@@ -160,14 +153,14 @@ class Game:
         text_highest_number = myfont_bold.render(str(self.highscore), True, (255, 255, 255))
         
         self._display_surf.blit(text_game_count, (45, self.window_height + 50))
-        self._display_surf.blit(text_game_count_number, (220, self.window_height + 50))
-        self._display_surf.blit(text_moves_left, (280, self.window_height + 50))
-        self._display_surf.blit(text_moves_left_number, (480, self.window_height + 50))
+        self._display_surf.blit(text_game_count_number, (180, self.window_height + 50))
+        self._display_surf.blit(text_moves_left, (220, self.window_height + 50))
+        self._display_surf.blit(text_moves_left_number, (360, self.window_height + 50))
         
         self._display_surf.blit(text_score, (45, self.window_height + 100))
-        self._display_surf.blit(text_score_number, (150, self.window_height + 100))
-        self._display_surf.blit(text_highest, (280, self.window_height + 100))
-        self._display_surf.blit(text_highest_number, (480, self.window_height + 100))
+        self._display_surf.blit(text_score_number, (180, self.window_height + 100))
+        self._display_surf.blit(text_highest, (220, self.window_height + 100))
+        self._display_surf.blit(text_highest_number, (360, self.window_height + 100))
 
 
     def draw_snake(self):
@@ -243,9 +236,6 @@ class Game:
             self.update_snake()
             self.check_collisions()
                 
-            events = pygame.event.get()
-            self.on_event(events)
-            
             self.controller.update_state()
             pygame.time.wait(self.speed)
     
@@ -254,9 +244,8 @@ class Game:
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--ai', action='store_true', help="AI controlls snake")
-    parser.add_argument("--speed",type=int, default=100, help='Specifiy the delay between the frames in milli-seconds. 0 is the fastest. Default: 100 do note 0 ms is not attainable some delay is introduced becaiuse of the computations')
-    parser.add_argument('--count', type=int, default=100, help='Max game count to be played. Default: 100')
-
+    parser.add_argument('--speed', type=int, default=100, help='Speed of game. 0 is the fastest. Default: 100')
+    parser.add_argument('--count', type=int, default=100, help='Game count to play. Default: 100')
     args = parser.parse_args()
     
     controller = KeyboardController()
@@ -267,9 +256,10 @@ if __name__ == "__main__":
     highscore_in_game = [] 
     
     game = Game(controller, args.speed)
-    while game.game_count < args.count:
+    while game.game_count < args.count or args.count == 0:
         game.run()
         score_in_game.append(game.get_score())
         highscore_in_game.append(game.highscore)
+        print("Game count: {} Highscore: {}".format(game.game_count, game.highscore))
         
     game.cleanup()
