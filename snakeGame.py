@@ -118,7 +118,13 @@ class Game:
     
     def is_end(self):
         return not self._running
-        
+      
+    def on_event(self, events):
+        for event in events:   
+            if event.type == pygame.QUIT:
+                self._running = False
+                pygame.quit()
+                sys.exit()
     
     def draw_board(self):
         self._display_surf.fill((0, 0, 0))    # border
@@ -139,14 +145,14 @@ class Game:
         text_highest = myfont.render('HIGHEST SCORE: ', True, (255, 255, 255))
         text_highest_number = myfont_bold.render(str(self.highscore), True, (255, 255, 255))
         
-        self._display_surf.blit(text_game_count, (45, self.window_height + 50))
+        self._display_surf.blit(text_game_count, (25, self.window_height + 50))
         self._display_surf.blit(text_game_count_number, (180, self.window_height + 50))
         self._display_surf.blit(text_moves_left, (220, self.window_height + 50))
         self._display_surf.blit(text_moves_left_number, (360, self.window_height + 50))
         
         self._display_surf.blit(text_score, (45, self.window_height + 100))
-        self._display_surf.blit(text_score_number, (180, self.window_height + 100))
-        self._display_surf.blit(text_highest, (220, self.window_height + 100))
+        self._display_surf.blit(text_score_number, (120, self.window_height + 100))
+        self._display_surf.blit(text_highest, (175, self.window_height + 100))
         self._display_surf.blit(text_highest_number, (360, self.window_height + 100))
 
 
@@ -207,7 +213,7 @@ class Game:
         
         if self.fruit.get_rect().contains(self.player.get_first_block_rect()):
             self.player.make_bigger()
-            self.moves_left += 500
+            self.moves_left += 100
             self.generate_fruit()
             if self.player.get_score() > self.highscore:
                 self.highscore = self.player.get_score()
@@ -217,11 +223,15 @@ class Game:
         self.init()
         self.game_count += 1
         while not self.is_end():
+  
             self.render()
             self.read_move()
             
             self.update_snake()
             self.check_collisions()
+            
+            events = pygame.event.get()
+            self.on_event(events)
                 
             self.controller.update_state()
             pygame.time.wait(self.speed)

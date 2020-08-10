@@ -63,7 +63,7 @@ class AIController(Controller):
             i += 1
             #print(" i = ", i)
 
-        return 0
+        return 1
 
 
     def get_snake_vision(self):
@@ -90,6 +90,7 @@ class AIController(Controller):
     
 
     def make_move(self):
+        self.reward -= 0
         self.last_state = self.get_snake_vision()
         prediction = self.neural_network.predict(self.last_state.reshape((1, self.get_input_size())))
         
@@ -100,6 +101,8 @@ class AIController(Controller):
         # Predictions will be a [[0.3333328  0.3332601  0.33340713]] type np array
         self.last_decision = to_categorical(np.argmax(prediction[0]), num_classes=3)
         
+        print("Current Reward = ", self.reward)
+        
         if self.last_decision[0]:   # left
             self.player.turn_left()
         elif self.last_decision[1]: # forward
@@ -107,14 +110,15 @@ class AIController(Controller):
         elif self.last_decision[2]: # right
             self.player.turn_right()
         
+        
             
     def set_reward(self):
-        self.reward = 0
+        #self.reward = 0
         if self.player.get_score() > self.score:
             self.score = self.player.get_score()
-            self.reward = 500
+            self.reward += 500
         elif self.game.is_end():
-            self.reward = -500
+            self.reward += -500
         # else:
         #     self.reward = - self.player.positions[0].distance(self.game.fruit.position) / self.player.step
         
